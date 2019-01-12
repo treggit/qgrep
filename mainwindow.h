@@ -21,7 +21,7 @@ private slots:
     void add_directory();
     void remove_directory();
     void start_search();
-    void add_string_entries(QVector<QString> entries, bool last);
+    void add_string_entries(QVector<QString> const& entries, bool last);
     void try_cancel_search();
     void search_cancelled();
     void update_files_number(size_t num, QString dir);

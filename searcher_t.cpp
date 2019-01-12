@@ -57,18 +57,15 @@ bool searcher_t::contains(QString const& path, QString const& str) {
             return false;
         }
         while (!(add = text_stream.read(BUFFER_SIZE)).isEmpty()) {
-            if (isInterruptionRequested()) {
+            if(isInterruptionRequested()) {
                 return false;
             }
             buffer.append(add);
-            if (prefix_function_check(p, buffer, str.size(), str.size() + 1)) {
+            if(prefix_function_check(p, buffer, str.size(), str.size() + 1)) {
                 return true;
             }
             buffer = buffer.mid(0, str.size() + 1) + buffer.mid(buffer.size() - str.size(), str.size());
 
-            if (isInterruptionRequested()) {
-                return false;
-            }
         }
     }
 

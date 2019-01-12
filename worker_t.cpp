@@ -153,9 +153,11 @@ void worker_t::try_release(bool last) {
 }
 
 void worker_t::search_string(QString str) {
+    waiting.clear();
+    released.clear();
     emit set_progress_bar_max(index.size());
     search_progress = 0;
-    releasing_number = index.size() / 10 + 1;
+    releasing_number = index.size() / 100 + 1;
     searcher->set_string(str);
     searcher->start();
 }
