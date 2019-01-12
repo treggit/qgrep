@@ -13,15 +13,7 @@
 #include <QFuture>
 #include <QVector>
 #include "trigram.h"
-
-namespace std {
-    template <>
-    struct hash <QString> {
-        auto operator() (QString const& s) const noexcept {
-            return hash<std::string>()(s.toStdString());
-        }
-    };
-}
+#include "QString_std_hash.h"
 
 class searcher_t : public QThread {
 Q_OBJECT

@@ -14,6 +14,6 @@ add_executable(qgrep
         main.cpp
         mainwindow.cpp
         mainwindow.h
-        mainwindow.ui worker_t.cpp worker_t.h searcher_t.cpp searcher_t.h trigram.cpp trigram.h)
+        mainwindow.ui worker_t.cpp worker_t.h searcher_t.cpp searcher_t.h trigram.cpp trigram.h QString_std_hash.h)
 
 target_link_libraries(qgrep Qt5::Widgets -lpthread)
