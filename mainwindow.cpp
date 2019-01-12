@@ -45,7 +45,7 @@ void MainWindow::init_connections() {
 
     connect(ui->cancelSearchButton, SIGNAL(clicked(bool)), this, SLOT(try_cancel_search()));
     connect(this, SIGNAL(search_string(QString)), w, SLOT(search_string(QString)));
-    connect(w, SIGNAL(release_entries(QVector<QString>, bool)), this, SLOT(add_string_entries(QVector<QString> const&, bool)));
+    connect(w, SIGNAL(release_entries(QVector<QString> const&, bool)), this, SLOT(add_string_entries(QVector<QString> const&, bool)));
     connect(this, SIGNAL(shutdown_worker()), w, SLOT(shutdown_worker()));
 
     connect(this, SIGNAL(interrupt_search()), w, SLOT(kill_searcher()));
@@ -171,6 +171,7 @@ void MainWindow::try_cancel_search() {
 
 void MainWindow::search_cancelled() {
     cancelling = false;
+    ui->progressBar->reset();
     ui->searchStatus->setText("Cancelled");
 }
 

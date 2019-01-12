@@ -11,7 +11,7 @@
 #include "trigram.h"
 
 worker_t::worker_t() : index(), index_mutex(), searcher(new searcher_t(index, index_mutex)) {
-    connect(searcher.get(), SIGNAL(release_entry(QString)), this, SLOT(return_entry(QString)));
+    connect(searcher.get(), SIGNAL(release_entry(QString)), this, SLOT(return_entry(QString const&)));
     connect(searcher.get(), SIGNAL(finished()), this, SLOT(searching_finished()));
     connect(searcher.get(), SIGNAL(inc_progress_bar()), this, SLOT(inc_progress_bar()));
     //connect(&watcher, SIGNAL(fileChanged(const QString&)), this, SLOT(index_file(const QString&)));
@@ -59,7 +59,7 @@ void worker_t::remove_directory(QString path) {
         }
         QString file = it.next();
         std::lock_guard<std::mutex> lock(index_mutex);
-        index[file].clear();
+        index.erase(file);
     }
 
     emit directory_removed(path);
@@ -72,10 +72,10 @@ void worker_t::index_file(QString const& dir, QString const& path) {
         }
         auto trigrams = get_trigrams(path);
         std::lock_guard<std::mutex> lock1(index_mutex);
-        if (trigrams.size() <= MAX_TRIGRAMS_NUMBER) {
+        if (trigrams.size() <= MAX_TRIGRAMS_NUMBER && !trigrams.empty()) {
             index[path] = std::move(trigrams);
         } else {
-            index[path].clear();
+            index.erase(path);
         }
         std::lock_guard<std::mutex> lock2(left_to_index_mutex);
         left_to_index[dir]--;
@@ -130,7 +130,7 @@ std::vector<trigram> worker_t::get_trigrams(QString const& path) {
     return real_res;
 }
 
-void worker_t::return_entry(QString path) {
+void worker_t::return_entry(QString const& path) {
     if (released.find(path) != released.end()) {
         return;
     }

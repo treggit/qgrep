@@ -29,7 +29,7 @@ private slots:
     void add_directory(QString path);
     void remove_directory(QString path);
     void search_string(QString str);
-    void return_entry(QString path);
+    void return_entry(QString const& path);
     void searching_finished();
     void index_file(QString const& dir, QString const& path);
     void kill_searcher();
@@ -39,7 +39,7 @@ private slots:
 
 signals:
     void finished_indexing(QString path);
-    void release_entries(QVector<QString> entries, bool last);
+    void release_entries(QVector<QString> const& entries, bool last);
     void searcher_killed();
     void files_left(size_t num, QString dir);
     void directory_removed(QString);

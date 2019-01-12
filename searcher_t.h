@@ -27,7 +27,7 @@ public:
     void set_string(QString const& str);
 
 signals:
-    void release_entry(QString path);
+    void release_entry(QString const& path);
     void inc_progress_bar();
 
 //public slots:
@@ -46,7 +46,7 @@ private:
     void search_string(QString const& str);
 
     bool interrupted = false;
-    const size_t BUFFER_SIZE = 1024;
+    const size_t BUFFER_SIZE = 4 * 1024;
 };
 
 #endif //QGREP_SEARCHER_H
