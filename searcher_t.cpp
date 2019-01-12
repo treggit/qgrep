@@ -77,10 +77,11 @@ bool searcher_t::check_trigrams(QString const& path, QString const& str) {
         return true;
     }
     trigram cur = 0;
-    std::lock_guard<std::mutex> lock(index_mutex);
-    auto& ind = index[path];
     next_trigram(cur, str[0]);
     next_trigram(cur, str[1]);
+    std::lock_guard<std::mutex> lock(index_mutex);
+    auto& ind = index[path];
+
     for (size_t i = 2; i < str.size(); i++) {
         next_trigram(cur, str.at(i));
         if (std::lower_bound(ind.begin(), ind.end(), cur) == ind.end()) {

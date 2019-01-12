@@ -14,6 +14,7 @@
 #include <QVector>
 #include "trigram.h"
 #include "QString_std_hash.h"
+#include <mutex>
 
 class searcher_t : public QThread {
 Q_OBJECT

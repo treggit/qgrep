@@ -15,6 +15,8 @@
 #include "searcher_t.h"
 #include "trigram.h"
 #include "QString_std_hash.h"
+#include <memory>
+#include <mutex>
 
 class worker_t : public QThread {
 Q_OBJECT
