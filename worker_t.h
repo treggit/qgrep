@@ -36,14 +36,15 @@ private slots:
     void kill_pool();
     void shutdown_worker();
     void inc_progress_bar();
+    void reindex_file(QString const& path);
 
 signals:
-    void finished_indexing(QString path);
+    void finished_indexing(QString const& path);
     void release_entries(QVector<QString> const& entries, bool last);
     void searcher_killed();
-    void files_left(size_t num, QString dir);
-    void directory_removed(QString);
-    void add_error(QString error);
+    void files_left(size_t num, QString const& dir);
+    void directory_removed(QString const&);
+    void add_error(QString const& error);
     void update_progress_bar(int);
     void set_progress_bar_max(int max);
     void interrupt_search();
@@ -71,6 +72,7 @@ private:
     const size_t BUFFER_SIZE = 1024;
     const size_t MAX_TRIGRAMS_NUMBER = 20000;
     size_t releasing_number = 1000;
+    QFileSystemWatcher system_watcher;
 };
 
 #endif //QGREP_WORKER_H

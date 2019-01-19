@@ -21,7 +21,9 @@ searcher_t::~searcher_t() {
 void searcher_t::search_string(QString const& str) {
     std::unique_lock<std::mutex> lock(index_mutex);
     for (auto& i : index) {
-        find_string_in_file(str, i.first);
+        if (!i.second.empty()) {
+            find_string_in_file(str, i.first);
+        }
     }
     lock.unlock();
     search_pool.waitForDone();

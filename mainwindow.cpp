@@ -32,10 +32,10 @@ void MainWindow::init_connections() {
 
     connect(&worker_thread, SIGNAL(finished()), w, SLOT(deleteLater()));
     //connect(w, SIGNAL(finished_indexing(QString)), this, SLOT(update_indexing_status(QString)));
-    connect(this, SIGNAL(process_add_directory(QString)), w, SLOT(add_directory(QString const&)));
-    connect(this, SIGNAL(process_remove_directory(QString)), w, SLOT(remove_directory(QString const&)));
-    connect(w, SIGNAL(files_left(size_t, QString)), this, SLOT(update_files_number(size_t, QString const&)));
-    connect(w, SIGNAL(directory_removed(QString)), this, SLOT(remove_directory_from_list(QString const&)));
+    connect(this, SIGNAL(process_add_directory(QString const&)), w, SLOT(add_directory(QString const&)));
+    connect(this, SIGNAL(process_remove_directory(QString const&)), w, SLOT(remove_directory(QString const&)));
+    connect(w, SIGNAL(files_left(size_t, QString const&)), this, SLOT(update_files_number(size_t, QString const&)));
+    connect(w, SIGNAL(directory_removed(QString const&)), this, SLOT(remove_directory_from_list(QString const&)));
 
     connect(w, SIGNAL(add_error(QString)), this, SLOT(add_error(QString const&)));
 

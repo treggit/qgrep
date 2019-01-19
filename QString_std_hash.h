@@ -11,7 +11,7 @@ namespace std {
     template <>
     struct hash <QString> {
         auto operator() (QString const& s) const noexcept {
-            return hash<std::string>()(s.toStdString());
+            return qHash(s);
         }
     };
 }

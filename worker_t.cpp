@@ -12,10 +12,10 @@
 #include <algorithm>
 
 worker_t::worker_t() : index(), index_mutex(), searcher(new searcher_t(index, index_mutex)) {
-    connect(searcher.get(), SIGNAL(release_entry(QString)), this, SLOT(return_entry(QString const&)));
+    connect(searcher.get(), SIGNAL(release_entry(QString const&)), this, SLOT(return_entry(QString const&)));
     connect(searcher.get(), SIGNAL(finished()), this, SLOT(searching_finished()));
     connect(searcher.get(), SIGNAL(inc_progress_bar()), this, SLOT(inc_progress_bar()));
-    //connect(&watcher, SIGNAL(fileChanged(const QString&)), this, SLOT(index_file(const QString&)));
+    connect(&system_watcher, SIGNAL(fileChanged(const QString&)), this, SLOT(reindex_file(const QString&)));
 }
 
 worker_t::~worker_t() {
@@ -34,6 +34,7 @@ void worker_t::add_directory(QString const& path) {
         std::lock_guard<std::mutex> lock(index_mutex);
         if (index[file].empty()) {
             files.push_back(file);
+            system_watcher.addPath(file);
         }
     }
     left_to_index[path] = files.size();
@@ -56,6 +57,7 @@ void worker_t::remove_directory(QString const& path) {
         QString file = it.next();
         std::lock_guard<std::mutex> lock(index_mutex);
         index.erase(file);
+        system_watcher.removePath(file);
     }
 
     emit directory_removed(path);
@@ -146,6 +148,7 @@ void worker_t::search_string(QString const& str) {
     emit set_progress_bar_max(std::max(index.size(), (size_t) 1));
     search_progress = 0;
     releasing_number = index.size() / 100 + 1;
+    qDebug() << str;
     searcher->set_string(str);
     searcher->start();
 }
@@ -181,4 +184,8 @@ void worker_t::inc_progress_bar() {
     if (search_progress % 100) {
         emit update_progress_bar(search_progress);
     }
+}
+
+void worker_t::reindex_file(QString const& path) {
+    index_file("", path);
 }
