@@ -32,19 +32,19 @@ void MainWindow::init_connections() {
 
     connect(&worker_thread, SIGNAL(finished()), w, SLOT(deleteLater()));
     //connect(w, SIGNAL(finished_indexing(QString)), this, SLOT(update_indexing_status(QString)));
-    connect(this, SIGNAL(process_add_directory(QString)), w, SLOT(add_directory(QString)));
-    connect(this, SIGNAL(process_remove_directory(QString)), w, SLOT(remove_directory(QString)));
-    connect(w, SIGNAL(files_left(size_t, QString)), this, SLOT(update_files_number(size_t, QString)));
-    connect(w, SIGNAL(directory_removed(QString)), this, SLOT(remove_directory_from_list(QString)));
+    connect(this, SIGNAL(process_add_directory(QString)), w, SLOT(add_directory(QString const&)));
+    connect(this, SIGNAL(process_remove_directory(QString)), w, SLOT(remove_directory(QString const&)));
+    connect(w, SIGNAL(files_left(size_t, QString)), this, SLOT(update_files_number(size_t, QString const&)));
+    connect(w, SIGNAL(directory_removed(QString)), this, SLOT(remove_directory_from_list(QString const&)));
 
-    connect(w, SIGNAL(add_error(QString)), this, SLOT(add_error(QString)));
+    connect(w, SIGNAL(add_error(QString)), this, SLOT(add_error(QString const&)));
 
     connect(ui->addButton, SIGNAL(clicked(bool)), this, SLOT(add_directory()));
     connect(ui->removeButton, SIGNAL(clicked(bool)), this, SLOT(remove_directory()));
     connect(ui->findButton, SIGNAL(clicked(bool)), this, SLOT(start_search()));
 
     connect(ui->cancelSearchButton, SIGNAL(clicked(bool)), this, SLOT(try_cancel_search()));
-    connect(this, SIGNAL(search_string(QString)), w, SLOT(search_string(QString)));
+    connect(this, SIGNAL(search_string(QString)), w, SLOT(search_string(QString const&)));
     connect(w, SIGNAL(release_entries(QVector<QString> const&, bool)), this, SLOT(add_string_entries(QVector<QString> const&, bool)));
     connect(this, SIGNAL(shutdown_worker()), w, SLOT(shutdown_worker()));
 
@@ -72,7 +72,7 @@ void MainWindow::update_indexing_status(QString const& path, QString const& stat
     }
 }
 
-void MainWindow::update_files_number(size_t num, QString dir) {
+void MainWindow::update_files_number(size_t num, QString const& dir) {
     QString status;
     if (num == 0) {
         status = "Ready";
@@ -80,7 +80,10 @@ void MainWindow::update_files_number(size_t num, QString dir) {
         status = "Indexing, " + QString::number(num) + " files left";
     }
 
-    update_indexing_status(dir, status);
+    auto item = get_item(dir);
+    if (item != nullptr && item->text(1) != "Removing") {
+        item->setText(1, status);
+    }
 }
 
 void MainWindow::add_directory() {
@@ -90,18 +93,31 @@ void MainWindow::add_directory() {
     if (dir.isEmpty()) {
         return;
     }
-    auto item = new QTreeWidgetItem();
-    item->setText(0, dir);
-    item->setText(1, "Indexing");
-    ui->directoriesList->addTopLevelItem(item);
+    auto x = get_item(dir);
+    auto item = x == nullptr ? new QTreeWidgetItem() : x;
+    if (item->text(1) != "Indexing") {
+        item->setText(0, dir);
+        item->setText(1, "Indexing");
+    }
+    if (x == nullptr) {
+        ui->directoriesList->addTopLevelItem(item);
+    }
     emit process_add_directory(dir);
 }
 
 void MainWindow::remove_directory() {
+    if (ui->directoriesList->currentItem() == nullptr) {
+        return;
+    }
     auto answer = exec_message_box("Are you sure you want to remove directory?");
     if (answer == QMessageBox::Yes) {
-        emit process_remove_directory(ui->directoriesList->currentItem()->text(0));
-        ui->directoriesList->currentItem()->setText(1, "Removing");
+        auto dir = ui->directoriesList->currentItem()->text(0);
+        for (auto it = QTreeWidgetItemIterator(ui->directoriesList); *it; it++) {
+            if ((*it)->text(0).startsWith(dir)) {
+                (*it)->setText(1, "Removing");
+                emit process_remove_directory((*it)->text(0));
+            }
+        }
     }
 }
 
@@ -171,13 +187,15 @@ void MainWindow::try_cancel_search() {
 
 void MainWindow::search_cancelled() {
     cancelling = false;
-    ui->progressBar->reset();
+    ui->progressBar->setValue(0);
     ui->searchStatus->setText("Cancelled");
 }
 
-void MainWindow::remove_directory_from_list(QString dir) {
+void MainWindow::remove_directory_from_list(QString const& dir) {
     auto item = get_item(dir);
-    delete item;
+    if (item->text(1) == "Removing") {
+        delete item;
+    }
 }
 
 QTreeWidgetItem* MainWindow::get_item(QString const& label) {
@@ -193,27 +211,27 @@ void MainWindow::add_error(QString message) {
     ui->errorsList->addItem(message);
 }
 
-QString command_with_escapes(QString const& command, QString const& path) {
-    QString res = command;
-    for (auto&& c : path) {
-        if (c.isSpace()) {
-            res.append('\\');
-        }
-        res.append(c);
-    }
-    return res;
-}
-
 void MainWindow::open_file() {
-    auto path = ui->entriesList->currentItem()->data(0).toString();
-    QString command = QString("open ");
-    system(command_with_escapes(command, path).toStdString().c_str());
+    auto path = QUrl(ui->entriesList->currentItem()->data(0).toString());
+    path.setScheme("file");
+    bool ok = QDesktopServices::openUrl(path);
+    if (!ok) {
+        QMessageBox msg_box;
+        msg_box.setText("Couldn't open: " + path.path());
+        msg_box.exec();
+    }
 }
 
 void MainWindow::open_file_in_folder() {
     auto path = ui->entriesList->currentItem()->data(0).toString();
-    QString command = QString("open ");
-    system(command_with_escapes(command, path.mid(0, path.lastIndexOf('/'))).toStdString().c_str());
+    auto url = QUrl(path.mid(0, path.lastIndexOf('/')));
+    url.setScheme("file");
+    bool ok = QDesktopServices::openUrl(url);
+    if (!ok) {
+        QMessageBox msg_box;
+        msg_box.setText("Couldn't open: " + url.path());
+        msg_box.exec();
+    }
 }
 
 void MainWindow::on_listWidget_customContextMenuRequested(const QPoint& pos) {

@@ -19,15 +19,12 @@ searcher_t::~searcher_t() {
 }
 
 void searcher_t::search_string(QString const& str) {
-    QVector<QFuture<void>> future;
     std::unique_lock<std::mutex> lock(index_mutex);
     for (auto& i : index) {
-        future.append(find_string_in_file(str, i.first));
+        find_string_in_file(str, i.first);
     }
     lock.unlock();
-    for (auto& f : future) {
-        f.waitForFinished();
-    }
+    search_pool.waitForDone();
     qDebug() << "finished search";
 }
 
@@ -60,6 +57,7 @@ bool searcher_t::contains(QString const& path, QString const& str) {
         bool f = true;
         while ((buffer.append(text_stream.read(BUFFER_SIZE))).size() > str.size() + 1) {
             if(isInterruptionRequested()) {
+                qDebug() << "interrupted";
                 return false;
             }
             if(prefix_function_check(p, buffer, str.size(), f ? str.size() + 1 : str.size() * 2 + 1)) {

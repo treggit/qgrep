@@ -26,9 +26,9 @@ public:
     ~worker_t();
 
 private slots:
-    void add_directory(QString path);
-    void remove_directory(QString path);
-    void search_string(QString str);
+    void add_directory(QString const& path);
+    void remove_directory(QString const& path);
+    void search_string(QString const& str);
     void return_entry(QString const& path);
     void searching_finished();
     void index_file(QString const& dir, QString const& path);
@@ -53,7 +53,6 @@ private:
     std::unordered_map<QString, std::vector<trigram>> index;
     std::mutex index_mutex;
 
-    std::unordered_set<QString> released;
     QVector<QString> waiting;
 
     std::unique_ptr<searcher_t> searcher;

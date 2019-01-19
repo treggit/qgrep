@@ -9,6 +9,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QCloseEvent>
 #include "trigram.h"
+#include <algorithm>
 
 worker_t::worker_t() : index(), index_mutex(), searcher(new searcher_t(index, index_mutex)) {
     connect(searcher.get(), SIGNAL(release_entry(QString)), this, SLOT(return_entry(QString const&)));
@@ -21,13 +22,9 @@ worker_t::~worker_t() {
     shutdown_worker();
 }
 
-void worker_t::add_directory(QString path) {
+void worker_t::add_directory(QString const& path) {
     QDirIterator it(path, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     QVector<QString> files;
-    if (indexed.find(path) != indexed.end()) {
-        return;
-    }
-    indexed.insert(path);
     deleted.erase(path);
     while (it.hasNext()) {
         if (shutdown) {
@@ -45,12 +42,11 @@ void worker_t::add_directory(QString path) {
     }
 }
 
-void worker_t::remove_directory(QString path) {
+void worker_t::remove_directory(QString const& path) {
     QDirIterator it(path, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     if (deleted.find(path) != deleted.end()) {
         return;
     }
-    indexed.erase(path);
     deleted.insert(path);
 
     while (it.hasNext()) {
@@ -131,10 +127,6 @@ std::vector<trigram> worker_t::get_trigrams(QString const& path) {
 }
 
 void worker_t::return_entry(QString const& path) {
-    if (released.find(path) != released.end()) {
-        return;
-    }
-    released.insert(path);
     waiting.push_back(path);
     try_release();
 }
@@ -146,16 +138,12 @@ void worker_t::try_release(bool last) {
     if (waiting.size() >= releasing_number || last) {
         emit release_entries(waiting, last);
         waiting.clear();
-        if (last) {
-            released.clear();
-        }
     }
 }
 
-void worker_t::search_string(QString str) {
+void worker_t::search_string(QString const& str) {
     waiting.clear();
-    released.clear();
-    emit set_progress_bar_max(index.size());
+    emit set_progress_bar_max(std::max(index.size(), (size_t) 1));
     search_progress = 0;
     releasing_number = index.size() / 100 + 1;
     searcher->set_string(str);

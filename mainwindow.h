@@ -24,9 +24,9 @@ private slots:
     void add_string_entries(QVector<QString> const& entries, bool last);
     void try_cancel_search();
     void search_cancelled();
-    void update_files_number(size_t num, QString dir);
+    void update_files_number(size_t num, QString const& dir);
     void update_indexing_status(QString const& path, QString const& status);
-    void remove_directory_from_list(QString dir);
+    void remove_directory_from_list(QString const& dir);
     void add_error(QString message);
     void on_listWidget_customContextMenuRequested(const QPoint& pos);
     void open_file();
