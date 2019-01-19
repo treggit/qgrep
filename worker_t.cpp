@@ -15,25 +15,32 @@ worker_t::worker_t() : index(), index_mutex(), searcher(new searcher_t(index, in
     connect(searcher.get(), SIGNAL(release_entry(QString const&)), this, SLOT(return_entry(QString const&)));
     connect(searcher.get(), SIGNAL(finished()), this, SLOT(searching_finished()));
     connect(searcher.get(), SIGNAL(inc_progress_bar()), this, SLOT(inc_progress_bar()));
-    connect(&system_watcher, SIGNAL(fileChanged(const QString&)), this, SLOT(reindex_file(const QString&)));
+    //connect(&system_watcher, SIGNAL(fileChanged(const QString&)), this, SLOT(reindex_file(QString)));
+    connect(&system_watcher, SIGNAL(directoryChanged(const QString&)), this, SLOT(reindex_dir(QString)));
 }
 
 worker_t::~worker_t() {
     shutdown_worker();
 }
 
-void worker_t::add_directory(QString const& path) {
-    QDirIterator it(path, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+void worker_t::add_directory(QString const& path, bool reindexed) {
+    QDirIterator it(path, QDir::Hidden | QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     QVector<QString> files;
-    deleted.erase(path);
+    if (!reindexed) {
+        deleted.erase(path);
+        system_watcher.addPath(path);
+    }
     while (it.hasNext()) {
         if (shutdown) {
             return;
         }
         QString file = it.next();
-        std::lock_guard<std::mutex> lock(index_mutex);
-        if (index[file].empty()) {
-            files.push_back(file);
+        if (it.fileInfo().isFile()) {
+            std::lock_guard<std::mutex> lock(index_mutex);
+            if(index[file].empty()) {
+                files.push_back(file);
+            }
+        } else {
             system_watcher.addPath(file);
         }
     }
@@ -44,12 +51,12 @@ void worker_t::add_directory(QString const& path) {
 }
 
 void worker_t::remove_directory(QString const& path) {
-    QDirIterator it(path, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    QDirIterator it(path, QDir::Hidden | QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     if (deleted.find(path) != deleted.end()) {
         return;
     }
     deleted.insert(path);
-
+    system_watcher.removePath(path);
     while (it.hasNext()) {
         if (shutdown) {
             return;
@@ -58,6 +65,16 @@ void worker_t::remove_directory(QString const& path) {
         std::lock_guard<std::mutex> lock(index_mutex);
         index.erase(file);
         system_watcher.removePath(file);
+    }
+
+    QVector<QString> to_delete;
+    for (auto&& dir : system_watcher.directories()) {
+        if (dir.startsWith(path)) {
+            to_delete.append(path);
+        }
+    }
+    for (auto&& dir : to_delete) {
+        system_watcher.removePath(dir);
     }
 
     emit directory_removed(path);
@@ -148,7 +165,6 @@ void worker_t::search_string(QString const& str) {
     emit set_progress_bar_max(std::max(index.size(), (size_t) 1));
     search_progress = 0;
     releasing_number = index.size() / 100 + 1;
-    qDebug() << str;
     searcher->set_string(str);
     searcher->start();
 }
@@ -186,6 +202,14 @@ void worker_t::inc_progress_bar() {
     }
 }
 
-void worker_t::reindex_file(QString const& path) {
+void worker_t::reindex_file(QString path) {
+    //qDebug() << "reindex" << path;
     index_file("", path);
+}
+
+void worker_t::reindex_dir(QString path) {
+    qDebug() << "reindex dir" << path;
+    if (QDir(path).exists()) {
+        add_directory(path, true);
+    }
 }

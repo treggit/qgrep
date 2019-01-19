@@ -26,7 +26,7 @@ public:
     ~worker_t();
 
 private slots:
-    void add_directory(QString const& path);
+    void add_directory(QString const& path, bool reindexed = false);
     void remove_directory(QString const& path);
     void search_string(QString const& str);
     void return_entry(QString const& path);
@@ -36,7 +36,8 @@ private slots:
     void kill_pool();
     void shutdown_worker();
     void inc_progress_bar();
-    void reindex_file(QString const& path);
+    void reindex_file(QString path);
+    void reindex_dir(QString path);
 
 signals:
     void finished_indexing(QString const& path);
