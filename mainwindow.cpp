@@ -152,6 +152,7 @@ void MainWindow::add_string_entries(QVector<QString> const& entries, bool last) 
     }
     if (last) {
         searching = false;
+        ui->progressBar->setValue(ui->progressBar->maximum());
         ui->searchStatus->setText("Done");
     }
 }

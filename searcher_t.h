@@ -15,6 +15,7 @@
 #include "trigram.h"
 #include "QString_std_hash.h"
 #include <mutex>
+#include <vector>
 
 class searcher_t : public QThread {
 Q_OBJECT
@@ -27,7 +28,7 @@ public:
     void set_string(QString const& str);
 
 signals:
-    void release_entry(QString const& path);
+    void release_entry(QString path);
     void inc_progress_bar();
 
 //public slots:
@@ -41,7 +42,7 @@ private:
 
     QFuture<void> find_string_in_file(QString const& str, QString const& path);
     bool contains(QString const& path, QString const& str);
-    bool check_trigrams(QString const& path, QString const& str);
+    bool check_trigrams(std::vector<trigram> const& path, QString const& str);
     bool prefix_function_check(QVector<size_t>& p, QString const& s, size_t need, size_t start_from = 1);
     void search_string(QString const& str);
 

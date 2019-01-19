@@ -12,7 +12,7 @@
 #include <algorithm>
 
 worker_t::worker_t() : index(), index_mutex(), searcher(new searcher_t(index, index_mutex)) {
-    connect(searcher.get(), SIGNAL(release_entry(QString const&)), this, SLOT(return_entry(QString const&)));
+    connect(searcher.get(), SIGNAL(release_entry(QString)), this, SLOT(return_entry(QString const&)));
     connect(searcher.get(), SIGNAL(finished()), this, SLOT(searching_finished()));
     connect(searcher.get(), SIGNAL(inc_progress_bar()), this, SLOT(inc_progress_bar()));
     //connect(&system_watcher, SIGNAL(fileChanged(const QString&)), this, SLOT(reindex_file(QString)));
@@ -64,7 +64,7 @@ void worker_t::remove_directory(QString const& path) {
         QString file = it.next();
         std::lock_guard<std::mutex> lock(index_mutex);
         index.erase(file);
-        system_watcher.removePath(file);
+        //system_watcher.removePath(file);
     }
 
     QVector<QString> to_delete;
@@ -182,11 +182,7 @@ void worker_t::kill_pool() {
 
 void worker_t::kill_searcher() {
     searcher->requestInterruption();
-    //search_pool.clear();
-    //search_pool.waitForDone();
     searcher->wait();
-//    search_progress = index.size();
-//    inc_progress_bar();
     emit searcher_killed();
 }
 

@@ -21,8 +21,10 @@ searcher_t::~searcher_t() {
 void searcher_t::search_string(QString const& str) {
     std::unique_lock<std::mutex> lock(index_mutex);
     for (auto& i : index) {
-        if (!i.second.empty()) {
+        if (check_trigrams(i.second, str)) {
             find_string_in_file(str, i.first);
+        } else {
+            emit inc_progress_bar();
         }
     }
     lock.unlock();
@@ -42,9 +44,6 @@ QFuture<void> searcher_t::find_string_in_file(QString const& str, QString const&
 }
 
 bool searcher_t::contains(QString const& path, QString const& str) {
-    if (!check_trigrams(path, str)) {
-        return false;
-    }
     QFile file(path);
     if (file.open(QIODevice::ReadOnly)) {
         QTextStream text_stream(&file);
@@ -76,15 +75,13 @@ bool searcher_t::contains(QString const& path, QString const& str) {
     return false;
 }
 
-bool searcher_t::check_trigrams(QString const& path, QString const& str) {
+bool searcher_t::check_trigrams(std::vector<trigram> const& ind, QString const& str) {
     if (str.size() < 3) {
         return true;
     }
     trigram cur = 0;
     next_trigram(cur, str[0]);
     next_trigram(cur, str[1]);
-    std::lock_guard<std::mutex> lock(index_mutex);
-    auto& ind = index[path];
     for (size_t i = 2; i < str.size(); i++) {
         next_trigram(cur, str.at(i));
         if (!std::binary_search(ind.begin(), ind.end(), cur)) {
