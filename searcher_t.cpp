@@ -95,6 +95,9 @@ bool searcher_t::check_trigrams(QString const& path, QString const& str) {
 bool searcher_t::prefix_function_check(QVector<size_t>& p, QString const& s, size_t need, size_t start_from) {
     size_t j;
     for (size_t i = start_from; i < s.size(); i++) {
+        if (!valid_for_text(s.at(i))) {
+            return false;
+        }
         j = p[i - 1];
         while (j > 0 && s.at(i) != s.at(j)) {
             j = p[j - 1];
